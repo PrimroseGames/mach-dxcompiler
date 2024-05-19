@@ -34,6 +34,8 @@ typedef struct MachDxcCompileResultImpl* MachDxcCompileResult MACH_OBJECT_ATTRIB
 typedef struct MachDxcCompileErrorImpl* MachDxcCompileError MACH_OBJECT_ATTRIBUTE;
 typedef struct MachDxcCompileObjectImpl* MachDxcCompileObject MACH_OBJECT_ATTRIBUTE;
 
+typedef int (*MachDxcIncludeHandlerCallback)(char16_t const* filename, char16_t const** result);
+
 //----------------
 // MachDxcCompiler
 //----------------
@@ -58,8 +60,17 @@ MACH_EXPORT MachDxcCompileResult machDxcCompile(
     char const* code,
     size_t code_len,
     char const* const* args,
+    size_t args_len,
+    MachDxcIncludeHandlerCallback includeHandlerCallback
+);
+
+MACH_EXPORT MachDxcCompileResult machDxcCompileFile(
+    MachDxcCompiler compiler,
+    char const* code,
+    char const* const* args,
     size_t args_len
 );
+
 
 /// Returns an error object, or null in the case of success.
 ///

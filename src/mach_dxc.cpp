@@ -25,18 +25,98 @@
 extern "C" {
 #endif
 
+
 // Mach change start: static dxcompiler/dxil
 BOOL MachDxcompilerInvokeDllMain();
 void MachDxcompilerInvokeDllShutdown();
 
+static CComPtr<IDxcUtils> pUtils;
+
+class CustomIncludeHandler : public IDxcIncludeHandler
+{
+    MachDxcIncludeHandlerCallback callback;
+
+public:
+    HRESULT STDMETHODCALLTYPE LoadSource(_In_ LPCWSTR pFilename, _COM_Outptr_result_maybenull_ IDxcBlob** ppIncludeSource) override
+    {
+        // LPCWSTR to char16_t*
+        auto pFileNameWideStr = std::wstring(pFilename);
+
+        auto pFilenameStr = std::basic_string<char16_t>(pFileNameWideStr.begin(), pFileNameWideStr.end());
+
+        char16_t const* callbackResultStr;
+        auto hr = callback(pFilenameStr.c_str(), &callbackResultStr);
+
+        if (hr != 0) {
+            printf("callback failed");
+            return E_FAIL;
+        }
+
+        auto str16 = std::basic_string<char16_t>(callbackResultStr);
+
+        if (str16.size() == 0) {
+            printf("Include file not found: %ls\n", pFileNameWideStr.c_str());
+        }
+
+        CComPtr<IDxcBlobEncoding> pEncoding;
+    
+        pUtils->CreateBlobFromPinned(str16.c_str(), str16.size() * sizeof(wchar_t), DXC_CP_UTF16, &pEncoding.p);
+        *ppIncludeSource = pEncoding.Detach();
+
+        return S_OK;
+
+        /*
+        ComPtr<IDxcBlobEncoding> pEncoding;
+        std::string path = Paths::Normalize(UNICODE_TO_MULTIBYTE(pFilename));
+        if (IncludedFiles.find(path) != IncludedFiles.end())
+        {
+            // Return empty string blob if this file has been included before
+            static const char nullStr[] = " ";
+            pUtils->CreateBlobFromPinned(nullStr, ARRAYSIZE(nullStr), DXC_CP_ACP, pEncoding.GetAddressOf());
+            *ppIncludeSource = pEncoding.Detach();
+            return S_OK;
+        }
+
+        HRESULT hr = pUtils->LoadFile(pFilename, nullptr, pEncoding.GetAddressOf());
+        if (SUCCEEDED(hr))
+        {
+            IncludedFiles.insert(path);
+            *ppIncludeSource = pEncoding.Detach();
+        }
+        return hr;*/
+    }
+
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid,
+                                           void **ppvObject) override {
+        return E_NOINTERFACE;
+    }
+    
+    ULONG STDMETHODCALLTYPE AddRef(void) override {	return 0; }
+    ULONG STDMETHODCALLTYPE Release(void) override { return 0; }
+
+    void SetCallback(MachDxcIncludeHandlerCallback callback) {
+        this->callback = callback;
+    }
+};
+
+CComPtr<IDxcIncludeHandler> includeHandler = nullptr;
+
 //----------------
 // MachDxcCompiler
 //----------------
+
 MACH_EXPORT MachDxcCompiler machDxcInit() {
     MachDxcompilerInvokeDllMain();
     CComPtr<IDxcCompiler3> dxcInstance;
     HRESULT hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxcInstance));
     assert(SUCCEEDED(hr));
+
+
+    hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&pUtils));
+    assert(SUCCEEDED(hr));
+
+    includeHandler = new CustomIncludeHandler();
+
     return reinterpret_cast<MachDxcCompiler>(dxcInstance.Detach());
 }
 
@@ -54,9 +134,13 @@ MACH_EXPORT MachDxcCompileResult machDxcCompile(
     char const* code,
     size_t code_len,
     char const* const* args,
-    size_t args_len
+    size_t args_len,
+    MachDxcIncludeHandlerCallback includeHandlerCallback
 ) {
     CComPtr<IDxcCompiler3> dxcInstance = CComPtr(reinterpret_cast<IDxcCompiler3*>(compiler));
+    CComPtr<CustomIncludeHandler> includeHandler = CComPtr(reinterpret_cast<CustomIncludeHandler*>(::includeHandler.p));
+    
+    includeHandler->SetCallback(includeHandlerCallback);
 
     CComPtr<IDxcUtils> pUtils;
     DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&pUtils));
@@ -87,7 +171,7 @@ MACH_EXPORT MachDxcCompileResult machDxcCompile(
         &sourceBuffer,
         arguments,
         (uint32_t)args_len,
-        nullptr,
+        includeHandlerCallback != nullptr ? includeHandler : nullptr,
         IID_PPV_ARGS(&pCompileResult)
     );
     assert(SUCCEEDED(hr));
