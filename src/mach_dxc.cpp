@@ -137,8 +137,8 @@ MACH_EXPORT MachDxcCompileResult machDxcCompile(
     size_t args_len,
     MachDxcIncludeHandlerCallback includeHandlerCallback
 ) {
-    CComPtr<IDxcCompiler3> dxcInstance = CComPtr(reinterpret_cast<IDxcCompiler3*>(compiler));
-    CComPtr<CustomIncludeHandler> includeHandler = CComPtr(reinterpret_cast<CustomIncludeHandler*>(::includeHandler.p));
+    CComPtr<IDxcCompiler3> dxcInstance = CComPtr<IDxcCompiler3>(reinterpret_cast<IDxcCompiler3*>(compiler));
+    CComPtr<CustomIncludeHandler> includeHandler = CComPtr<CustomIncludeHandler>(reinterpret_cast<CustomIncludeHandler*>(::includeHandler.p));
     
     includeHandler->SetCallback(includeHandlerCallback);
 
@@ -181,7 +181,7 @@ MACH_EXPORT MachDxcCompileResult machDxcCompile(
 }
 
 MACH_EXPORT MachDxcCompileError machDxcCompileResultGetError(MachDxcCompileResult err) {
-    CComPtr<IDxcResult> pCompileResult = CComPtr(reinterpret_cast<IDxcResult*>(err));
+    CComPtr<IDxcResult> pCompileResult = CComPtr<IDxcResult>(reinterpret_cast<IDxcResult*>(err));
     CComPtr<IDxcBlobUtf8> pErrors;
     pCompileResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&pErrors), nullptr);
     if (pErrors && pErrors->GetStringLength() > 0) {
@@ -191,7 +191,7 @@ MACH_EXPORT MachDxcCompileError machDxcCompileResultGetError(MachDxcCompileResul
 }
 
 MACH_EXPORT MachDxcCompileObject machDxcCompileResultGetObject(MachDxcCompileResult err) {
-    CComPtr<IDxcResult> pCompileResult = CComPtr(reinterpret_cast<IDxcResult*>(err));
+    CComPtr<IDxcResult> pCompileResult = CComPtr<IDxcResult>(reinterpret_cast<IDxcResult*>(err));
     CComPtr<IDxcBlob> pObject;
     pCompileResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&pObject), nullptr);
     if (pObject && pObject->GetBufferSize() > 0) {
@@ -201,44 +201,44 @@ MACH_EXPORT MachDxcCompileObject machDxcCompileResultGetObject(MachDxcCompileRes
 }
 
 MACH_EXPORT void machDxcCompileResultDeinit(MachDxcCompileResult err) {
-    CComPtr<IDxcResult> pCompileResult = CComPtr(reinterpret_cast<IDxcResult*>(err));
-    pCompileResult.Release();
+    CComPtr<IDxcResult> pCompileResult = CComPtr<IDxcResult>(reinterpret_cast<IDxcResult*>(err));
+    pCompileResult->Release();
 }
 
 //---------------------
 // MachDxcCompileObject
 //---------------------
 MACH_EXPORT char const* machDxcCompileObjectGetBytes(MachDxcCompileObject err) {
-    CComPtr<IDxcBlob> pObject = CComPtr(reinterpret_cast<IDxcBlob*>(err));
+    CComPtr<IDxcBlob> pObject = CComPtr<IDxcBlob>(reinterpret_cast<IDxcBlob*>(err));
     return (char const*)(pObject->GetBufferPointer());
 }
 
 MACH_EXPORT size_t machDxcCompileObjectGetBytesLength(MachDxcCompileObject err) {
-    CComPtr<IDxcBlob> pObject = CComPtr(reinterpret_cast<IDxcBlob*>(err));
+    CComPtr<IDxcBlob> pObject = CComPtr<IDxcBlob>(reinterpret_cast<IDxcBlob*>(err));
     return pObject->GetBufferSize();
 }
 
 MACH_EXPORT void machDxcCompileObjectDeinit(MachDxcCompileObject err) {
-    CComPtr<IDxcBlob> pObject = CComPtr(reinterpret_cast<IDxcBlob*>(err));
-    pObject.Release();
+    CComPtr<IDxcBlob> pObject = CComPtr<IDxcBlob>(reinterpret_cast<IDxcBlob*>(err));
+    pObject->Release();
 }
 
 //--------------------
 // MachDxcCompileError
 //--------------------
 MACH_EXPORT char const* machDxcCompileErrorGetString(MachDxcCompileError err) {
-    CComPtr<IDxcBlobUtf8> pErrors = CComPtr(reinterpret_cast<IDxcBlobUtf8*>(err));
+    CComPtr<IDxcBlobUtf8> pErrors = CComPtr<IDxcBlobUtf8>(reinterpret_cast<IDxcBlobUtf8*>(err));
     return (char const*)(pErrors->GetBufferPointer());
 }
 
 MACH_EXPORT size_t machDxcCompileErrorGetStringLength(MachDxcCompileError err) {
-    CComPtr<IDxcBlobUtf8> pErrors = CComPtr(reinterpret_cast<IDxcBlobUtf8*>(err));
+    CComPtr<IDxcBlobUtf8> pErrors = CComPtr<IDxcBlobUtf8>(reinterpret_cast<IDxcBlobUtf8*>(err));
     return pErrors->GetStringLength();
 }
 
 MACH_EXPORT void machDxcCompileErrorDeinit(MachDxcCompileError err) {
-    CComPtr<IDxcBlobUtf8> pErrors = CComPtr(reinterpret_cast<IDxcBlobUtf8*>(err));
-    pErrors.Release();
+    CComPtr<IDxcBlobUtf8> pErrors = CComPtr<IDxcBlobUtf8>(reinterpret_cast<IDxcBlobUtf8*>(err));
+    pErrors->Release();
 }
 
 #ifdef __cplusplus

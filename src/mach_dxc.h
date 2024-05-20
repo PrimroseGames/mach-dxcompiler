@@ -29,6 +29,16 @@ extern "C" {
 
 #include <stddef.h>
 
+#if __cplusplus > 199711L
+// Has C++ 11, so we can assume presence of `char16_t` and `char32_t`
+#else
+#include <inttypes.h>
+typedef int16_t char16_t;
+typedef uint16_t uchar16_t;
+typedef int32_t char32_t;
+typedef uint32_t uchar32_t;
+#endif
+
 typedef struct MachDxcCompilerImpl* MachDxcCompiler MACH_OBJECT_ATTRIBUTE;
 typedef struct MachDxcCompileResultImpl* MachDxcCompileResult MACH_OBJECT_ATTRIBUTE;
 typedef struct MachDxcCompileErrorImpl* MachDxcCompileError MACH_OBJECT_ATTRIBUTE;
